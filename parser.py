@@ -438,7 +438,7 @@ def extract_additional_safety_info(text):
 
     # section_5 = extract_section(text,5)
     section_7 = extract_between_sections(text, (7, r"handling\s+and\s+storage"), (8, r"exposure\s+controls\s*/\s*personal\s+protection"))
-    print("\n\nsection 7 text", section_7)
+    # print("\n\nsection 7 text", section_7)
     section_9 = extract_between_sections(text, (9, r"physical\s+and\s+chemical\s+properties"), (10, r"stability\s+and\s+reactivity"))
     # print("\n\nsection 9 text", section_9)
     section_10 = extract_between_sections(text, (10, r"stability\s+and\s+reactivity"), (11, r"toxicological\s+information"))

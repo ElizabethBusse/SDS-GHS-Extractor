@@ -6,34 +6,39 @@ from parser import *
 
 # tests SDS upload
 
-root = tk.Tk()
-root.withdraw()
+def run_parser(filepath):
+    results = parse_sds_file(filepath)
 
-print("Please select an SDS PDF file")
-filepath = filedialog.askopenfilename(
-    title="Select SDS PDF",
-    filetypes=[("PDF files", "*.pdf")]
-)
+    # print("\nSDS Parsing Result:\n")
+    # print(json.dumps(results, indent=2))
 
-if not filepath:
-    print("No file selected. Exiting")
-    exit()
+    print("\nValid Hazard Matches from SDS:\n")
+    valid_ghs = [
+        entry for entry in results["ghs_from_sds"]
+        if all([
+            entry.get("original_text"),
+            entry.get("match_score") is not None,
+            entry.get("ghs_code"),
+            entry.get("category"),
+            entry.get("official_text")
+        ])
+    ]
+    print(json.dumps(valid_ghs, indent=2))
 
-print(f"File selected: {os.path.basename(filepath)}")
-results = parse_sds_file(filepath)
 
-# print("\nSDS Parsing Result:\n")
-# print(json.dumps(results, indent=2))
+if __name__ == "__main__":
+    root = tk.Tk()
+    root.withdraw()
 
-print("\nValid Hazard Matches from SDS:\n")
-valid_ghs = [
-    entry for entry in results["ghs_from_sds"]
-    if all([
-        entry.get("original_text"),
-        entry.get("match_score") is not None,
-        entry.get("ghs_code"),
-        entry.get("category"),
-        entry.get("official_text")
-    ])
-]
-print(json.dumps(valid_ghs, indent=2))
+    print("Please select an SDS PDF file")
+    filepath = filedialog.askopenfilename(
+        title="Select SDS PDF",
+        filetypes=[("PDF files", "*.pdf")]
+    )
+
+    if not filepath:
+        print("No file selected. Exiting")
+        exit()
+
+    print(f"File selected: {os.path.basename(filepath)}")
+    run_parser(filepath)
