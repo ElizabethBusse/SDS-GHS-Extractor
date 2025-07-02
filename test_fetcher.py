@@ -1,1 +1,28 @@
+from fetcher_firefox import *
+
 # tests cas number lookup
+
+def test_fetch_cas(cas_number):
+    print(f"\nTesting CAS: {cas_number}")
+    success = fetch_sds_sigma_aldrich(cas_number, selected_dir)
+    if success:
+        print(f"Fetched from Sigma-Aldrich: {cas_number}")
+        return
+    else:
+        print(f"Sigma-Aldrich failed for {cas_number}. Trying AaronChem...")
+
+        success = fetch_sds_aaron_chem(cas_number, selected_dir)
+        if success:
+            print(f"Fetched from AaronChem: {cas_number}")
+        else:
+            print(f"Failed to fetch SDS from both sources for {cas_number}")
+
+if __name__ == "__main__":
+    test_cases = [
+        '64-19-7',         # Should succeed on Sigma
+        '98327-87-8',      # Should succeed on AaronChem
+        '000-00-0',        # Should fail both
+    ]
+
+    for cas in test_cases:
+        test_fetch_cas(cas)

@@ -11,12 +11,6 @@ import requests
 
 # for cas number lookup
 
-
-# TODO: if no download SDS button, try on AaronChem
-#           currently crashes program, need graceful way to switch to AC
-#           AC has format of: aaronchem.com/sds/{cas}.pdf -> 404 error if not found
-
-
 root = tk.Tk()
 root.withdraw()
 selected_dir = filedialog.askdirectory(title="Select folder to save SDS files")
@@ -87,7 +81,8 @@ def fetch_sds_sigma_aldrich(cas_number, download_dir=None):
             new_path = os.path.join(download_dir, f"{cas_number}.pdf")
             os.rename(latest_pdf, new_path)
             print(f"Renamed {os.path.basename(latest_pdf)} to {cas_number}.pdf")
-
+        
+        return True
 
     except Exception as e:
         print(f"Sigma-Aldrich Error: {e}")
@@ -104,7 +99,6 @@ def fetch_sds_aaron_chem(cas_number, download_dir=None):
             "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.5993.70 Safari/537.36"
         }
         response = requests.get(url, headers=headers, stream=True)
-        print(response.status_code)
 
         if response.status_code == 200 and 'application/pdf' in response.headers.get('Content-Type', ''):
             save_path = os.path.join(download_dir or "/tmp", f"{cas_number}.pdf")
@@ -124,7 +118,7 @@ def fetch_sds_aaron_chem(cas_number, download_dir=None):
 if __name__ == "__main__":
     # fetch_sds_sigma_aldrich('64-19-7', '/Users/sophiezhou/Downloads/purdue/[10] summer 25/evonik/SDS GHS Extractor')
     if selected_dir:
-        # fetch_sds_sigma_aldrich('1173021-65-2', selected_dir)
-        fetch_sds_aaron_chem('98327-87-8', selected_dir)
+        fetch_sds_sigma_aldrich('000-00-0', selected_dir)
+        # fetch_sds_aaron_chem('98327-87-8', selected_dir)
     else:
         print("No folder selected. Exiting.")
