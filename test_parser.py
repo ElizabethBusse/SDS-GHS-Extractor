@@ -3,11 +3,18 @@ import json
 import tkinter as tk
 from tkinter import filedialog
 from parser import *
+import inspect
 
 # tests SDS upload
 
-def run_parser(filepath):
-    results = parse_sds_file(filepath)
+def run_parser(filepath=None, input_val=None, source="PDF Upload"):
+    stack = inspect.stack()
+    caller = stack[1].function
+    print("caller", caller)
+    if caller == "sds_upload":
+        results = parse_sds_file(input_val=input_val, source=source)
+    else:
+        results = parse_sds_file(filepath, source=source)
 
     print("\n\n\n\n\nSDS Parsing Result:\n")
     print(json.dumps(results, indent=2))

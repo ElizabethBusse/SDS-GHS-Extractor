@@ -559,7 +559,7 @@ def extract_additional_safety_info(text):
 
 
 # 10. full parser function
-def parse_sds_file(filepath=None, input_val=None, source="PDF Upload"):
+def parse_sds_file(filepath):
     """
     full SDS parsing pipeline:
     - extract text from SDS (OCR fallback)
@@ -579,15 +579,11 @@ def parse_sds_file(filepath=None, input_val=None, source="PDF Upload"):
         "ghs_from_pubchem": [],
         "cid": None,
         "comparison": {},
-        "notes": [],
-        "source": source
+        "notes": []
     }
 
     try:
-        if filepath != None:
-            text = extract_text_from_pdf(filepath)
-        elif input_val != None:
-            text = input_val
+        text = extract_text_from_pdf(filepath)
         result["chemical_name"] = extract_product_name(text)
         cas_info = extract_best_guess_cas(text)
         result["cas_number"] = cas_info["cas"]
