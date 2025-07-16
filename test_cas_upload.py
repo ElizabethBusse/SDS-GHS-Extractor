@@ -4,6 +4,7 @@
 
 import os
 from test_fetcher import test_fetch_cas, selected_dir
+from test_fetcher import test_fetch_cas
 from test_parser import run_parser
 
 # List of CAS numbers to process
