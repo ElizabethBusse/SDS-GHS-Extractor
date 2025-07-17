@@ -139,7 +139,7 @@ def extract_all_cas_numbers(text):
     valid_high = {cas for cas in high_conf_matches if is_valid_cas(cas)}
     valid_low = {cas for cas in low_conf_matches if is_valid_cas(cas)}
 
-    print(f"Extracted CAS Numbers:\n  High Confidence: {list(valid_high)}\n  Low Confidence: {list(valid_low)}")
+    # print(f"Extracted CAS Numbers:\n  High Confidence: {list(valid_high)}\n  Low Confidence: {list(valid_low)}")
 
     return {
         "high_confidence": list(valid_high),
@@ -223,7 +223,7 @@ def get_pubchem_name(cas):
             # allows any synonyms given by PubChem - preferred only: [and urn.get('name') == "Preferred"]
             if urn.get('label') == "IUPAC Name":
                 iupac_names.append(prop['value']['sval'].strip().lower())
-        print("found iupac name:", iupac_names)
+        # print("found iupac name:", iupac_names)
         iupac_names = list(dict.fromkeys(iupac_names))
         return iupac_names if iupac_names else None
     
@@ -325,7 +325,6 @@ def extract_ghs_statements(text, threshold=60):
         # print("phrase", phrase)
         h_code_match = re.match(r"^(H\d{3}(?:\s*(?:\+|,|/)\s*H\d{3})*)\b", phrase)
         if len(phrase) > 200:
-                print('ran')
                 continue  # ignore paragraph-length statements
         
         if h_code_match:
@@ -430,9 +429,9 @@ def compare_ghs_source(extracted_matches, pubhcem_h_statements):
     extra = extracted_h_codes - official_h_code
     missing = official_h_code - extracted_h_codes
 
-    print("[RESULT] Confirmed:", confirmed)
-    print("[RESULT] Extra:", extra)
-    print("[RESULT] Missing:", missing)
+    # print("[RESULT] Confirmed:", confirmed)
+    # print("[RESULT] Extra:", extra)
+    # print("[RESULT] Missing:", missing)
 
     return {
         "confirmed": sorted(confirmed),
@@ -487,7 +486,7 @@ def extract_additional_safety_info(text):
     section_10 = extract_between_sections(text, (10, r"stability\s+and\s+reactivity"), (11, r"toxicological\s+information"))
     # Normalize excessive empty lines to single empty line
     section_10 = re.sub(r'\n\s*\n+', '\n\n', section_10)
-    print("\n\nsection 10 text", section_10)
+    # print("\n\nsection 10 text", section_10)
 
     info = {}
     info["reactivity"] = section_10
@@ -610,9 +609,9 @@ def parse_sds_file(filepath=None, input_val=None, source="PDF Upload"):
             result["notes"].append("No CAS number found; skipping PubChem GHS lookup")
 
         extra_info = extract_additional_safety_info(text)
-        print("\n[INFO] Additional Safety Info by Section:")
-        for k, v in extra_info.items():
-            print(f"    {k}: {v}")
+        # print("\n[INFO] Additional Safety Info by Section:")
+        # for k, v in extra_info.items():
+            # print(f"    {k}: {v}")
         result.update(extra_info)
 
     except Exception as e:

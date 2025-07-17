@@ -10,16 +10,16 @@ import inspect
 def run_parser(filepath=None, input_val=None, source="PDF Upload"):
     stack = inspect.stack()
     caller = stack[1].function
-    print("caller", caller)
+    # print("caller", caller)
     if caller == "sds_upload":
         results = parse_sds_file(input_val=input_val, source=source)
     else:
         results = parse_sds_file(filepath, source=source)
 
-    print("\n\n\n\n\nSDS Parsing Result:\n")
-    print(json.dumps(results, indent=2))
+    # print("\n\n\n\n\nSDS Parsing Result:\n")
+    # print(json.dumps(results, indent=2))
 
-    print("\nValid Hazard Matches from SDS:\n")
+    # print("\nValid Hazard Matches from SDS:\n")
     valid_ghs = [
         entry for entry in results["ghs_from_sds"]
         if all([
@@ -30,7 +30,7 @@ def run_parser(filepath=None, input_val=None, source="PDF Upload"):
             entry.get("official_text")
         ])
     ]
-    print(json.dumps(valid_ghs, indent=2))
+    # print(json.dumps(valid_ghs, indent=2))
     return results
 
 

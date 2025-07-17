@@ -34,6 +34,7 @@ options.set_preference("browser.download.manager.showWhenStarting", False)
 
 
 def fetch_sds_sigma_aldrich(cas_number, download_dir=None):
+    # print("OLD FILE RAN SIGMA-FETCHER-FIREFOX")
     try:
         driver = webdriver.Firefox(options=options)
         print("Navigating to Sigma-Aldrich...")
@@ -95,6 +96,7 @@ def fetch_sds_sigma_aldrich(cas_number, download_dir=None):
 
 
 def fetch_sds_aaron_chem(cas_number, download_dir=None):
+    # print("OLD FILE RAN-AC-FETCHER-FIREFOX")
     try:
         print("Navigating to Aaron-Chem...")
         url = f"https://www.aaronchem.com/sds/{cas_number}.pdf"

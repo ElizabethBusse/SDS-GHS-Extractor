@@ -1,9 +1,11 @@
 from status_fetcher_firefox import *
+import streamlit as st
 
 # tests cas number lookup
 
 def test_fetch_cas(cas_number):
-    # print("OLD FILE RAN-TEST-FETCHER")
+    print("RUNNING ON STATUS FILE")
+    print(f"Searching for CAS number: {cas_number}")
     print(f"\n\nTesting CAS: {cas_number}")
     success = fetch_sds_sigma_aldrich(cas_number, selected_dir)
     if success:
@@ -18,16 +20,6 @@ def test_fetch_cas(cas_number):
             source = "AaronChem"
             print(f"\nFetched from AaronChem: {cas_number}")
         else:
-            print(f"\nFailed to fetch SDS from both sources for {cas_number}")
+            st.warning(f"\nFailed to fetch SDS from both sources for {cas_number}")
             source = "None"
     return source
-
-if __name__ == "__main__":
-    test_cases = [
-        '64-19-7',         # Should succeed on Sigma
-        '98327-87-8',      # Should succeed on AaronChem
-        '000-00-0',        # Should fail both
-    ]
-
-    for cas in test_cases:
-        test_fetch_cas(cas)
