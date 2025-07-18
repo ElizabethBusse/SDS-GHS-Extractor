@@ -12,6 +12,8 @@ import re
 # )
 
 # TODO: hazard statement as written in SDS, or official?
+#       include specific name if multiple nfpa found
+#       maybe toggle which one to keep of above?
 
 if 'submitted' not in st.session_state:
     st.session_state.submitted = False
@@ -74,6 +76,37 @@ if not st.session_state.submitted:
 
 
 
+def nfpa_design(nfpa, expander1):
+    # col1, col2 = expander1.columns([2,13])
+    expander1.write(f"NAME: {nfpa["name"]}")
+    # col2.badge(nfpa["name"], color="gray")
+
+    col1, col2, col3 = expander1.columns([3,1,16])
+    col1.badge("Health", color="blue")
+    col2.badge(nfpa["Health"]["value_html"], color="gray")
+    col3.write(nfpa["Health"]["description"])
+
+    col1, col2, col3 = expander1.columns([3,1,16])
+    col1.badge("Flammability", color="red")
+    col2.badge(nfpa["Flammability"]["value_html"], color="gray")
+    col3.write(nfpa["Flammability"]["description"])
+
+    col1, col2, col3 = expander1.columns([3,1,16])
+    col1.badge("Instability", color="orange")
+    col2.badge(nfpa["Instability"]["value_html"], color="gray")
+    col3.write(nfpa["Instability"]["description"])
+
+    col1, col2, col3 = expander1.columns([3,1,16])
+    col1.badge("Specific", color='gray')
+    if nfpa["Special"]["description"] == "":
+        col3.write(None)
+    else:
+        col3.write(nfpa["Special"]["description"])
+    if nfpa["Special"]["value_html"] is not None:
+        if "w" in nfpa["Special"]["value_html"].lower():
+            col2.badge("~~W~~", color="gray")
+        else:
+            col2.badge(nfpa["Special"]["value_html"], color="gray")
 
 
 def page_design(results, show_all=False):
@@ -89,8 +122,9 @@ def page_design(results, show_all=False):
         col1, col2 = expander1.columns([13,1])
         with col1:
             pubnames = results.get("pubchem_name", "None")
-            if pubnames == None:
-                col1.write("**Name**: None Found")
+            if not pubnames:
+                col1.write("**Name**")
+                col1.write(None)
             else:
                 col1.write("**Name**")
                 if isinstance(pubnames, list):
@@ -100,18 +134,23 @@ def page_design(results, show_all=False):
                     clean_names = [strip_html_tags(name) for name in pubnames]
                     unique_names = list(dict.fromkeys(clean_names))
 
-                    for name in unique_names:
-                        col1.badge(f"{name}", color="gray")
+                    for name in unique_names[:5]:
+                        if len(name) <= 50:
+                            col1.badge(f"{name}", color="gray")
+                        else:
+                            pass
                 else:
                     col1.badge(f"{pubnames}", color="gray")
         with col2:
-            if pubnames != None:
+            if pubnames:
                 st.badge("", icon=":material/check:", color="green")
 
 
         expander1.divider()
         expander1.write("**Hazard Statements**")
         ghs = results.get("ghs_from_sds", "None")
+        if not ghs:
+            expander1.write(None)
         for item in ghs:
             col1, col2, col3 = expander1.columns([3,10,1])
 
@@ -136,7 +175,25 @@ def page_design(results, show_all=False):
         expander1.divider()
         nfpa = results.get("nfpa")
         expander1.write("**NFPA Rating**")
-        expander1.write(nfpa)
+        # expander1.write(nfpa)
+        if nfpa is not None:
+            num_nfpa = int(len(nfpa) / 4)
+
+            col1, col2, col3 = expander1.columns([3,1,16])
+
+            if num_nfpa == 1:
+                nfpa_design(nfpa, expander1)
+
+            else:
+                expander1.badge(f"Found {len(nfpa)} matches for the NFPA Rating", color="orange", icon="⚠️")
+                expander1.write("")
+
+                for rating in nfpa:
+                    nfpa_design(rating, expander1)
+                    if rating != nfpa[-1]:
+                        expander1.divider()
+        else:
+            expander1.write(None)
 
 
         expander1.divider()

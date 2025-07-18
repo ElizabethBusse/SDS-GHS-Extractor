@@ -10,6 +10,8 @@ import json
 
 from haz_comp_full import *
 from status_fetcher_firefox import fetch_nfpa_cameo, compare_nfpa_results
+from pub_nfpa import *
+from nist_name import get_nist_names
 
 # for imported SDS documents
 
@@ -195,40 +197,6 @@ def extract_product_name(text):
     return "Product name not found on SDS"
 
 
-# SECTION 4. validate CAS against *PubChem* chemical name
-@lru_cache(maxsize=128) # cache previously searched CAS no.
-def get_pubchem_name(cas):
-    # print("test name cache")
-    url = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/xref/rn/{cas}/JSON" # PUG REST API standard url for CAS no. lookup
-    try:
-        response = requests.get(url, timeout=5)
-        data = response.json()
-
-        if 'PC_Compounds' not in data:
-            print(f"[PubChem Error] 'PC_Compounds' key not found in response for CAS {cas}")
-            print(f"Full JSON response: {json.dumps(data, indent=2)}")
-            return None
-
-        # refer to sample pubchem json structure
-        compound = data['PC_Compounds'][0]
-        
-        # collects all synonyms
-        iupac_names = []
-        for prop in compound.get('props', []):
-            urn = prop.get('urn', {})
-            # allows any synonyms given by PubChem - preferred only: [and urn.get('name') == "Preferred"]
-            if urn.get('label') == "IUPAC Name":
-                iupac_names.append(prop['value']['sval'].strip().lower())
-        # print("found iupac name:", iupac_names)
-        iupac_names = list(dict.fromkeys(iupac_names))
-        return iupac_names if iupac_names else None
-    
-    except Exception as e:
-        print(f"PubChem lookup failed: {e}")
-    
-    return None
-
-
 # SECTION 5. Pick best CAS with PubChem Validation
     # needs exact chemical name to validate, but can pass with no validation
 def extract_best_guess_cas(text):
@@ -238,7 +206,7 @@ def extract_best_guess_cas(text):
 
     for cas in cas_candidates:
         try:
-            pubchem_names = get_pubchem_name(cas)
+            pubchem_names = get_nist_names(cas)
             if pubchem_names and chemical_name_in_doc in pubchem_names:
                 return {"cas": cas, "validated": True}
         except Exception as e:
@@ -361,15 +329,23 @@ def extract_ghs_statements(text, threshold=60):
 
 
 # SECTION 7. cv GHS by CAS with PubChem
+def get_cid_from_cas(cas_number):
+    url = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/{cas_number}/cids/JSON"
+    response = requests.get(url)
+    
+    if response.status_code == 200:
+        data = response.json()
+        try:
+            return data['IdentifierList']['CID'][0]
+        except KeyError:
+            return None
+    else:
+        return None
+
 def get_pubchem_ghs_by_cas(cas):
     try:
         # Step 1: Get CID from CAS
-        cid_url = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/xref/rn/{cas}/JSON"
-        cid_resp = requests.get(cid_url, timeout=10)
-        cid_resp.raise_for_status()
-        cid_data = cid_resp.json()
-
-        cid = cid_data["PC_Compounds"][0]["id"]["id"]["cid"]
+        cid = get_cid_from_cas(cas)
 
         # Step 2: Use CID to fetch detailed compound info
         ghs_url = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug_view/data/compound/{cid}/JSON"
@@ -590,7 +566,7 @@ def parse_sds_file(filepath=None, input_val=None, source="PDF Upload"):
         result["cas_validated"] = cas_info["validated"]
         ghs_from_sds = extract_ghs_statements(text)
         result["ghs_from_sds"] = ghs_from_sds
-        pubchem_name = get_pubchem_name(result["cas_number"])
+        pubchem_name = get_nist_names(result["cas_number"])
         result["pubchem_name"] = pubchem_name
 
         if cas_info["cas"]:
@@ -613,12 +589,18 @@ def parse_sds_file(filepath=None, input_val=None, source="PDF Upload"):
         
         if cas_info["cas"]:
             res = fetch_nfpa_cameo(cas_info["cas"])
-            consensus = compare_nfpa_results(res)
-            print('RANNNNNNNNN 617 PARSER')
-            result["nfpa"] = consensus
-            print("\n\n FINAL: ",consensus)
+            if res is not None:
+                consensus = compare_nfpa_results(res)
+                result["nfpa"] = consensus
+                print("\n\n FINAL: ",consensus)
+            else:
+                consensus = None
         else:
             print("no cas number found")
+
+
+        if consensus is None:
+            result["nfpa"] = extract_nfpa_hazard(result["cid"])
 
     except Exception as e:
         result["notes"].append(f"Error processing SDS file: {e}")

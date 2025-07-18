@@ -125,7 +125,7 @@ def fetch_sds_aaron_chem(cas_number, download_dir=None):
 
 
 def fetch_nfpa_cameo(cas_number):
-    with st.status(f"Searching Cameo Chemicals for NFPA 704 rating for {cas_number}...", expanded=True) as status:
+    with st.status(f"Searching Cameo for NFPA 704 rating ({cas_number})...", expanded=True) as status:
         try:
             driver = webdriver.Firefox(options=options)
             print("Navigating to Cameo Chemicals...")
@@ -159,6 +159,8 @@ def fetch_nfpa_cameo(cas_number):
 
         except Exception as e:
             print(f"Cameo Chemicals Error: {e}")
+            status.update(label="No NFPA information found on Cameo", state="error", expanded=False)
+            return None
         finally:
             driver.quit()
 

@@ -47,10 +47,15 @@ def extract_nfpa_704(url):
             desc_cell = row.find_next_sibling("td", class_="description")
             description = desc_cell.get_text(strip=True) if desc_cell else ""
 
+        name_element = soup.find('h1', class_='datasheet')
+        if name_element:
+            chemical_name = name_element.text.strip()
+
         nfpa_data[label] = {
             "value_html": value_html,
             "description": description
         }
+        nfpa_data["name"] = chemical_name
 
     return nfpa_data
 
