@@ -12,10 +12,15 @@ import tempfile
 import streamlit as st
 
 from cameo_soup_nfpa import *
+# from selenium.webdriver.remote.webdriver import WebDriver as RemoteWebDriver
 
 temp_dir = tempfile.TemporaryDirectory()
 selected_dir = temp_dir.name
-
+def get_remote_driver(options):
+    return webdriver.Remote(
+        command_executor="http://localhost:4444/wd/hub",
+        options=options
+    )
 
 # Setup Firefox options and profile for headless download
 options = Options()

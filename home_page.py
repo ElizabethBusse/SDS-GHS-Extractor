@@ -11,10 +11,6 @@ import re
 #     initial_sidebar_state="collapsed"
 # )
 
-# TODO: hazard statement as written in SDS, or official?
-#       include specific name if multiple nfpa found
-#       maybe toggle which one to keep of above?
-
 if 'submitted' not in st.session_state:
     st.session_state.submitted = False
 
@@ -78,7 +74,8 @@ if not st.session_state.submitted:
 
 def nfpa_design(nfpa, expander1):
     # col1, col2 = expander1.columns([2,13])
-    expander1.write(f"NAME: {nfpa["name"]}")
+    # expander1.write(f"Name: {nfpa["name"]}")
+    expander1.write(f"Name: {nfpa['name']}")
     # col2.badge(nfpa["name"], color="gray")
 
     col1, col2, col3 = expander1.columns([3,1,16])

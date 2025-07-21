@@ -4,9 +4,7 @@ import requests
 from rapidfuzz import fuzz
 from pdf2image import convert_from_path
 import pytesseract
-from functools import lru_cache
 import traceback
-import json
 
 from haz_comp_full import *
 from status_fetcher_firefox import fetch_nfpa_cameo, compare_nfpa_results
@@ -16,11 +14,7 @@ from nist_name import get_nist_names
 # for imported SDS documents
 
 # NOTE: specified only for SigmaAldrich (Millipore Sigma) and AaronChem (no guarantees on functionality beyond)
-
-# TODO: in cas number search -> if no SDS found on SA or AC, then allow single file upload
-
-# TODO: section 3 does not work (pdf name extractor, may just be irrelevant)
-#       show synonyms under chemical name on UI
+#       pdf name extractor obsolete (section 3)
 
 # TODO: fails when no wifi (pubchem lookup fails)
 #       indicate no pubchem ref + error
