@@ -10,6 +10,8 @@ from haz_comp_full import *
 from status_fetcher_firefox import fetch_nfpa_cameo, compare_nfpa_results
 from pub_nfpa import *
 from nist_name import get_nist_names
+import json
+from rapidfuzz import process, fuzz
 
 # for imported SDS documents
 
@@ -131,7 +133,7 @@ def extract_all_cas_numbers(text):
     valid_high = {cas for cas in high_conf_matches if is_valid_cas(cas)}
     valid_low = {cas for cas in low_conf_matches if is_valid_cas(cas)}
 
-    # print(f"Extracted CAS Numbers:\n  High Confidence: {list(valid_high)}\n  Low Confidence: {list(valid_low)}")
+    print(f"Extracted CAS Numbers:\n  High Confidence: {list(valid_high)}\n  Low Confidence: {list(valid_low)}")
 
     return {
         "high_confidence": list(valid_high),
@@ -191,7 +193,7 @@ def extract_product_name(text):
     return "Product name not found on SDS"
 
 
-# SECTION 5. Pick best CAS with PubChem Validation
+# SECTION 4. Pick best CAS with PubChem Validation
     # needs exact chemical name to validate, but can pass with no validation
 def extract_best_guess_cas(text):
     cas_split = extract_all_cas_numbers(text)
@@ -209,7 +211,7 @@ def extract_best_guess_cas(text):
     return {"cas": cas_candidates[0] if cas_candidates else None, "validated": False}
 
 
-# SECTION 6. hazard statements
+# SECTION 5. hazard statements
 def extract_ghs_statements(text, threshold=60):
     # extracts section 2, splits into GHS candidate phrases, returns top match
     lines = text.splitlines()
@@ -322,7 +324,7 @@ def extract_ghs_statements(text, threshold=60):
     return all_results
 
 
-# SECTION 7. cv GHS by CAS with PubChem
+# SECTION 6. cv GHS by CAS with PubChem
 def get_cid_from_cas(cas_number):
     url = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/{cas_number}/cids/JSON"
     response = requests.get(url)
@@ -375,7 +377,7 @@ def get_pubchem_ghs_by_cas(cas):
         return []
 
 
-# SECTION 8. discrepancy comparison
+# SECTION 7. discrepancy comparison
 def compare_ghs_source(extracted_matches, pubhcem_h_statements):
     extracted_h_codes = set()
     for entry in extracted_matches:
@@ -438,8 +440,132 @@ def extract_between_sections(text, start_section, end_section):
             section_text,
             flags=re.IGNORECASE | re.DOTALL
         )
+        # Remove Merck KGaA/MilliporeSigma business footer
+        section_text = re.sub(
+            r"The life science business of Merck KGaA, Darmstadt, Germany\s*operates as MilliporeSigma in the US and Canada",
+            "",
+            section_text,
+            flags=re.IGNORECASE | re.DOTALL
+        )
+        # Remove Aldrich page footer like "Aldrich - B17905\nPage 2  of  11"
+        section_text = re.sub(
+            r"Aldrich\s*-\s*[A-Z0-9]+\s*Page\s*\d+\s*of\s*\d+",
+            "",
+            section_text,
+            flags=re.IGNORECASE
+        )
 
         return section_text
+
+
+# SECTION 8: GHS classification category 1
+def ghs_category_1(text):
+    section_2 = extract_between_sections(
+        text,
+        (2, r"hazards\s+identification"),
+        (3, r"composition\s*/\s*information\s+on\s+ingredients")
+    )
+    # Find GHS classification section in Section 2
+    pattern_start = r"(GHS Classification in accordance with 29 CFR 1910 \(OSHA HCS\)|GHS classification in accordance with the OSHA Hazard Communication Standard\s*\(29 CFR 1910\.1200\))"
+    pattern_end = r"(pictogram|signal word|2\.2\s*GHS Label elements, including precautionary statements|GHS Label elements, including precautionary statements)"
+
+    match_start = re.search(pattern_start, section_2, re.IGNORECASE)
+    if match_start:
+        start_idx = match_start.end()
+        # Find end after start
+        # Find end after start
+        match_end = re.search(pattern_end, section_2[start_idx:], re.IGNORECASE)
+        if match_end:
+            end_idx = start_idx + match_end.start()
+            ghs_classification_text = section_2[start_idx:end_idx].strip()
+        else:
+            ghs_classification_text = section_2[start_idx:].strip()
+    else:
+        ghs_classification_text = ""
+
+    # print(ghs_classification_text)
+
+    # Extract all lines with a GHS category pattern (e.g., "Acute toxicity, Category 1", "Category 1A", etc.)
+    # Handles patterns like: "Acute toxicity, oral,(Category 4), H302"
+    # Updated pattern to match lines like "Flammable liquids\n: Category 2" or "Pyrophoric liquids\n: Category 1"
+    # Also matches "Skin corrosion\n: Sub-category 1B" and "Serious eye damage\n: Category 1"
+
+    # category_pattern = r"(.*?)(?:\n\s*[:\-]\s*(?:Sub-)?Category\s*([0-9][a-zA-Z]?))" # OPTION: ALL GHS CODES, NOT JUST CATEGORY 1
+    category_pattern = r"(.*?)(?:\n\s*[:\-]\s*(?:Sub-)?Category\s*(1[a-zA-Z]?))"
+
+
+    # Also match inline: "Category 1" in parentheses, e.g. "Acute toxicity, oral,(Category 1), H300"
+    # inline_pattern = r"(.*?)(?:\(\s*category\s*([0-9][a-zA-Z]?)\s*\))" # OPTION
+    inline_pattern = r"(.*?)(?:\(\s*category\s*(1[a-zA-Z]?)\s*\))"
+
+    matches = re.findall(category_pattern, ghs_classification_text, re.IGNORECASE)
+    matches += re.findall(inline_pattern, ghs_classification_text, re.IGNORECASE)
+
+    # Only keep those with category "1" (including "1A", "1B", etc.)
+    category_1_entries = []
+    for text, cat in matches:
+        # if re.match(r"[0-9][a-zA-Z]?$", cat.strip(), re.IGNORECASE): # OPTION
+        if re.match(r"1[a-zA-Z]?$", cat.strip(), re.IGNORECASE):
+            entry = {
+                "text": text.strip().rstrip(","),
+                "category": cat.strip()
+            }
+            category_1_entries.append(entry)
+
+    # Match entries to GHS category names
+    ghs_names = [
+        "Explosives",
+        "Flammable Gases",
+        "Chemically Unstable Gases",
+        "Pyrophoric Gases",
+        "Aerosols",
+        "Oxidizing Gases",
+        "Gases Under Pressure",
+        "Flammable Liquids",
+        "Flammable Solids",
+        "Self-reactive Substances",
+        "Pyrophoric Liquids",
+        "Pyrophoric Solids",
+        "Self-heating Substances",
+        "Chemicals which emit flammable gas when in contact with water",
+        "Oxidizing Liquids",
+        "Oxidizing Solids",
+        "Organic Peroxides",
+        "Corrosive to Metals",
+        "Desensitized Explosives",
+        "Acute Toxicity",
+        "Skin Corrosion/Irritation",
+        "Serious Eye Damage/Eye Irritation",
+        "Respiratory Sensitization",
+        "Skin Sensitization",
+        "Germ Cell Mutagenicity",
+        "Carcinogenicity",
+        "Reproductive Toxicity",
+        "Specific Target Organ Toxicity (Single Exposure)",
+        "Specific Target Organ Toxicity (Repeated Exposure)",
+        "Aspiration Hazard",
+        "Hazardous to the Aquatic Environment (Acute)",
+        "Hazardous to the Aquatic Environment (Chronic)",
+        "Hazardous to the Ozone Layer"
+    ]
+
+    for item in category_1_entries:
+        # Fuzzy match item[0] (the hazard name) to all in ghs_names, save highest match score
+        best_match = None
+        best_score = 0
+        for ghs_name in ghs_names:
+            score = fuzz.partial_ratio(item["text"].lower(), ghs_name.lower())
+            if score > best_score:
+                best_score = score
+                best_match = ghs_name
+        item["ghs_name_match"] = best_match
+        item["ghs_name_score"] = best_score
+
+    # # Optionally, print or return these entries for further use
+    # if category_1_entries:
+    #     print("GHS Category 1 entries found:", category_1_entries)
+    return category_1_entries
+
 
 # SECTION 9. flash point, storage condition, reactivity info
 def extract_additional_safety_info(text):
@@ -523,7 +649,7 @@ def extract_additional_safety_info(text):
     return info
 
 
-# 10. full parser function
+# SECTION 10. full parser function
 def parse_sds_file(filepath=None, input_val=None, source="PDF Upload"):
     """
     full SDS parsing pipeline:
@@ -546,7 +672,8 @@ def parse_sds_file(filepath=None, input_val=None, source="PDF Upload"):
         "comparison": {},
         "notes": [],
         "source": source,
-        "nfpa": None
+        "nfpa": None,
+        "ghs_categories": None
     }
 
     try:
@@ -562,6 +689,9 @@ def parse_sds_file(filepath=None, input_val=None, source="PDF Upload"):
         result["ghs_from_sds"] = ghs_from_sds
         pubchem_name = get_nist_names(result["cas_number"])
         result["pubchem_name"] = pubchem_name
+        ghs_category = ghs_category_1(text)
+        result["ghs_categories"] = ghs_category
+        print("CATS:", result["ghs_categories"])
 
         if cas_info["cas"]:
             try:
@@ -586,7 +716,7 @@ def parse_sds_file(filepath=None, input_val=None, source="PDF Upload"):
             if res is not None:
                 consensus = compare_nfpa_results(res)
                 result["nfpa"] = consensus
-                print("\n\n FINAL: ",consensus)
+                # print("\n\n FINAL: ",consensus)
             else:
                 consensus = None
         else:

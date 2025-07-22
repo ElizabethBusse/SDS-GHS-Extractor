@@ -148,13 +148,10 @@ def page_design(results, show_all=False):
         ghs = results.get("ghs_from_sds", "None")
         if not ghs:
             expander1.write(None)
-        for item in ghs:
-            col1, col2, col3 = expander1.columns([3,10,1])
+        else:
+            for item in ghs:
+                col1, col2, col3 = expander1.columns([3,10,1])
 
-            if ghs == None:
-                col1.write("GHS not found")
-
-            else:
                 code = item.get("ghs_code", "")
                 original_text = item.get("original_text", "")
                 if original_text is not None:
@@ -167,6 +164,19 @@ def page_design(results, show_all=False):
 
                 if code in confirmed:
                     col3.badge("", icon=":material/check:", color="green")
+
+        
+        expander1.divider()
+        expander1.write("**GHS Category 1**")
+        cat1 = results.get("ghs_categories", "None")
+        if not cat1:
+            expander1.write(None)
+        for item in cat1:
+            col1, col2 = expander1.columns([1,13])
+            text = item.get("ghs_name_match", "")
+            cat = item.get("category", "")
+            col1.badge(cat, color="gray")
+            col2.write(text)
 
 
         expander1.divider()
