@@ -14,6 +14,9 @@ from exporter import export_result_to_excel
 #     initial_sidebar_state="collapsed"
 # )
 
+# from status_fetcher_firefox import clean_temp_dir, selected_dir
+# clean_temp_dir(selected_dir)
+
 if 'submitted' not in st.session_state:
     st.session_state.submitted = False
 
@@ -116,7 +119,7 @@ def page_design(results, show_all=False):
 
         extra = results.get("additional_cas", "None")
         if extra:
-            expander1.badge(f"Multiple CAS found on SDS PDF ({results.get("chemical_name")})", icon='⚠️', color="orange")
+            expander1.badge(f"Multiple CAS found on SDS PDF ({results.get('chemical_name')})", icon='⚠️', color="orange")
 
         expander1.write(f"**CAS Number**: {cas_number}")
 

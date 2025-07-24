@@ -1,0 +1,31 @@
+FROM python:3.12-slim
+
+# Install Firefox and dependencies
+RUN apt-get update && apt-get install -y \
+    firefox-esr wget curl unzip gnupg \
+    libgtk-3-0 libdbus-glib-1-2 libnss3 libxss1 libasound2 libxt6 \
+    && rm -rf /var/lib/apt/lists/*
+
+# # Install geckodriver manually
+# ENV GECKODRIVER_VERSION=v0.34.0
+# RUN wget -q "https://github.com/mozilla/geckodriver/releases/download/${GECKODRIVER_VERSION}/geckodriver-${GECKODRIVER_VERSION}-linux64.tar.gz" && \
+#     tar -xzf "geckodriver-${GECKODRIVER_VERSION}-linux64.tar.gz" -C /usr/local/bin && \
+#     rm "geckodriver-${GECKODRIVER_VERSION}-linux64.tar.gz"
+
+# Set working directory
+WORKDIR /app
+COPY . .
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Streamlit headless config
+RUN mkdir -p ~/.streamlit
+RUN echo "\
+[server]\n\
+headless = true\n\
+port = \$PORT\n\
+enableCORS = false\n\
+" > ~/.streamlit/config.toml
+
+CMD ["streamlit", "run", "home_page.py"]

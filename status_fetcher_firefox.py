@@ -11,25 +11,46 @@ import requests
 import tempfile
 import streamlit as st
 
+from selenium.webdriver.firefox.service import Service as FirefoxService
+from webdriver_manager.firefox import GeckoDriverManager
+
+
 from cameo_soup_nfpa import *
 # from selenium.webdriver.remote.webdriver import WebDriver as RemoteWebDriver
 
-temp_dir = tempfile.TemporaryDirectory()
-selected_dir = temp_dir.name
+# temp_dir = tempfile.TemporaryDirectory()
+# selected_dir = temp_dir.name
+
+import shutil
+
+selected_dir = tempfile.mkdtemp(dir="/tmp")
+def clean_temp_dir(path):
+    try:
+        shutil.rmtree(path)
+    except Exception as e:
+        print(f"Cleanup failed: {e}")
+
 def get_remote_driver(options):
     return webdriver.Remote(
         command_executor="http://localhost:4444/wd/hub",
         options=options
     )
 
-# Setup Firefox options and profile for headless download
+# from selenium.webdriver.firefox.service import Service
 options = Options()
+
+# service = Service(executable_path="/usr/local/bin/geckodriver")
+# driver = webdriver.Firefox(service=service, options=options)
+
+# Setup Firefox options and profile for headless download
+options.set_capability("browserName", "firefox")
 options.add_argument("--headless")
 options.add_argument("--disable-gpu")
 options.add_argument("--no-sandbox")
 
 options.set_preference("browser.download.folderList", 2)
 options.set_preference("browser.download.dir", selected_dir or "/tmp")
+# options.set_preference("browser.download.dir", selected_dir)
 options.set_preference("browser.helperApps.neverAsk.saveToDisk", "application/pdf")
 options.set_preference("pdfjs.disabled", True)
 options.set_preference("browser.download.manager.showWhenStarting", False)
@@ -39,7 +60,9 @@ def fetch_sds_sigma_aldrich(cas_number, download_dir=None):
     # print("RUNNING ON STATUS FILE")
     with st.status("Searching on Sigma-Aldrich...", expanded=True) as status:
         try:
-            driver = webdriver.Firefox(options=options)
+            # driver = webdriver.Firefox(options=options, executable_path=GeckoDriverManager().install())
+            driver = webdriver.Firefox(service=FirefoxService(GeckoDriverManager().install()), options=options)
+            # driver = get_remote_driver(options)
             st.write("Navigating to Sigma-Aldrich...")
             driver.get("https://www.sigmaaldrich.com")
             WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "header-search-search-wrapper-input")))
@@ -95,7 +118,7 @@ def fetch_sds_sigma_aldrich(cas_number, download_dir=None):
 
         except Exception as e:
             print(f"Sigma-Aldrich Error: {e}")
-            status.update(label="Not found on Sigma-Aldrich", state="error", expanded=False)
+            status.update(label=f"Not found on Sigma-Aldrich", state="error", expanded=False)
             return False
         finally:
             driver.quit()
@@ -121,7 +144,7 @@ def fetch_sds_aaron_chem(cas_number, download_dir=None):
                 return True
             else:
                 st.write(f"No SDS found for CAS {cas_number} on AaronChem")
-                status.update(label="Not found on Sigma-Aldrich", state="error", expanded=False)
+                status.update(label=f"Not found on Aaron Chem", state="error", expanded=False)
                 return False
 
         except Exception as e:
@@ -132,7 +155,7 @@ def fetch_sds_aaron_chem(cas_number, download_dir=None):
 def fetch_nfpa_cameo(cas_number):
     with st.status(f"Searching Cameo for NFPA 704 rating ({cas_number})...", expanded=True) as status:
         try:
-            driver = webdriver.Firefox(options=options)
+            driver = webdriver.Firefox(service=FirefoxService(GeckoDriverManager().install()), options=options)
             st.write("Navigating to Cameo Chemicals...")
             driver.get("https://cameochemicals.noaa.gov/search/simple")
             WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, "//input[@name='cas']")))
@@ -165,8 +188,9 @@ def fetch_nfpa_cameo(cas_number):
             return nfpa_results
 
         except Exception as e:
-            print(f"Cameo Chemicals Error: {e}")
-            status.update(label="No NFPA information found on Cameo", state="error", expanded=False)
+            # print(f"Cameo Chemicals Error: {e}")
+            st.write(f"Cameo Chemicals Error: {e}")
+            status.update(label=f"No NFPA information found on Cameo", state="error", expanded=False)
             return None
         finally:
             driver.quit()

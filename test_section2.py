@@ -19,9 +19,10 @@ if __name__ == "__main__":
 
     print(f"File selected: {os.path.basename(filepath)}")
     text = extract_text_from_pdf(filepath)
-    cas_info = extract_best_guess_cas(text)
-    if isinstance(cas_info["cas"], str):
-        print(cas_info["cas"])
-    elif isinstance(cas_info["cas"], list):
-        print(cas_info["cas"][0])
-        print(cas_info["cas"])
+    print(text)
+    # cas_info = extract_best_guess_cas(text)
+    # if isinstance(cas_info["cas"], str):
+    #     print(cas_info["cas"])
+    # elif isinstance(cas_info["cas"], list):
+    #     print(cas_info["cas"][0])
+    #     print(cas_info["cas"])

@@ -1,4 +1,6 @@
 import fitz # from PyMuPDF
+# from pdfminer.high_level import extract_text, extract_text_to_fp
+import io
 import re
 import requests
 from rapidfuzz import fuzz
@@ -106,6 +108,7 @@ def streamlit_pdf_upload(pdf_input):
                 return text
     except Exception as e:
         print(f"Text extraction failed: {e}")
+
 
     # OCR fallback
     print("Using OCR fallback...")
@@ -722,7 +725,7 @@ def parse_sds_file(filepath=None, cas_number = None, input_val=None, source="PDF
                 result["comparison"] = compare_ghs_source(ghs_from_sds, pubchem_ghs)
                 result["cas_validated"] = True
             except Exception as e:
-                result["notes"].append(f"PubChem GHS lookup failed for CAS {result["cas_number"]}: {e}")
+                result["notes"].append(f"PubChem GHS lookup failed for CAS {result['cas_number']}: {e}")
         else:
             result["notes"].append("No CAS number found; skipping PubChem GHS lookup")
         

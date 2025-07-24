@@ -3,7 +3,7 @@
 
 from parser import streamlit_pdf_upload
 from test_parser import run_parser
-import tempfile
+# import tempfile
 from selenium.webdriver.firefox.options import Options
 from test_cas_upload import search_by_cas
 

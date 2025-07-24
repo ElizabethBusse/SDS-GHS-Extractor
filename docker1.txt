@@ -1,0 +1,41 @@
+# Use the official lightweight Python image
+FROM python:3.12-slim
+
+# Set environment variables to prevent Python from writing .pyc files and buffering stdout
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+# Set working directory
+WORKDIR /app
+
+# Install system dependencies for PyMuPDF (fitz) and Selenium
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    poppler-utils \
+    libgl1 \
+    firefox-esr \
+    wget \
+    unzip \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install GeckoDriver (required by Firefox + Selenium)
+RUN GECKODRIVER_VERSION="v0.34.0" && \
+    wget -q "https://github.com/mozilla/geckodriver/releases/download/$GECKODRIVER_VERSION/geckodriver-$GECKODRIVER_VERSION-linux64.tar.gz" && \
+    tar -xzf "geckodriver-$GECKODRIVER_VERSION-linux64.tar.gz" -C /usr/local/bin && \
+    rm "geckodriver-$GECKODRIVER_VERSION-linux64.tar.gz"
+
+# Copy requirements
+COPY requirements.txt .
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy entire repo contents to the working directory
+COPY . .
+
+# Expose Streamlit port
+EXPOSE 8501
+
+# Default command to run Streamlit app
+CMD ["streamlit", "run", "home_page.py", "--server.address=0.0.0.0"]

@@ -1,0 +1,45 @@
+# Start from Selenium Standalone Firefox image
+FROM selenium/standalone-firefox:latest
+
+USER root
+
+# Install Python and pip
+RUN apt-get update && apt-get install -y \
+    python3 \
+    python3-pip \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Upgrade pip
+RUN pip3 install --upgrade pip
+
+# Set working directory
+WORKDIR /app
+
+# Copy your application code
+COPY . /app
+COPY start.sh /start.sh
+RUN chmod +x /start.sh
+
+# Install Python requirements
+COPY requirements.txt .
+RUN pip3 install --no-cache-dir -r requirements.txt
+
+# Expose ports
+EXPOSE 8501
+EXPOSE 4444
+EXPOSE 7900
+
+# # Streamlit headless config
+# RUN mkdir -p ~/.streamlit
+# RUN echo "\
+# [server]\n\
+# headless = true\n\
+# port = \$PORT\n\
+# enableCORS = false\n\
+# " > ~/.streamlit/config.toml
+
+ENV STREAMLIT_HEADLESS=true
+
+ENTRYPOINT ["/start.sh"]
+# CMD ["bash", "-c", "streamlit run home_page.py & /opt/bin/start.sh"]
