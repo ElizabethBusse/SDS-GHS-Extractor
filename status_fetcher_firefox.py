@@ -47,6 +47,7 @@ options.set_capability("browserName", "firefox")
 options.add_argument("--headless")
 options.add_argument("--disable-gpu")
 options.add_argument("--no-sandbox")
+options.add_argument('--disable-dev-shm-usage')
 
 options.set_preference("browser.download.folderList", 2)
 options.set_preference("browser.download.dir", selected_dir or "/tmp")
