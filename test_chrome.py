@@ -1,8 +1,9 @@
 import streamlit as st
 import asyncio
 from playwright.async_api import async_playwright
-# import os
-# os.system("playwright install")
+import os
+os.system("pip install playwright")
+os.system("playwright install")
 
 # st.write("Starting the test…")
 
