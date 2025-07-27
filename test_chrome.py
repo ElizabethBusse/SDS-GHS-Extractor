@@ -13,14 +13,14 @@ from selenium.webdriver.support import expected_conditions as EC
 def get_driver():
     return webdriver.Chrome(
         service=Service(
-            ChromeDriverManager().install()  # Automatically detects your browser version
+            ChromeDriverManager(chrome_type=ChromeType.CHROMIUM).install()
         ),
         options=options,
     )
 
 options = Options()
 options.add_argument("--disable-gpu")
-# options.add_argument("--headless")
+options.add_argument("--headless")
 
 driver = get_driver()
 
