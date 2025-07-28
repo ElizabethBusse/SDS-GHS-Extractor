@@ -9,7 +9,7 @@ import pytesseract
 import traceback
 
 from haz_comp_full import *
-from status_fetcher_firefox import fetch_nfpa_cameo, compare_nfpa_results
+from test_no_selenium import fetch_nfpa_cameo, compare_nfpa_results
 from pub_nfpa import *
 from nist_name import get_nist_names
 import json

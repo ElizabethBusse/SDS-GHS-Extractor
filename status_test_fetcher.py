@@ -1,4 +1,4 @@
-from status_fetcher_firefox import *
+from test_no_selenium import *
 import streamlit as st
 
 # tests cas number lookup

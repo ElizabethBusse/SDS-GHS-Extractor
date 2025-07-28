@@ -1,4 +1,4 @@
-from status_fetcher_firefox import *
+from test_no_selenium import *
 
 # tests cas number lookup
 
