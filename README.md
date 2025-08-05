@@ -3,6 +3,7 @@
 [sdsreader.streamlit.app]()  
 Takes a while to load on first startup, please be patient :)  
 Note: parser **specified for Millipore-Sigma and AaronChem**, may not be accurate for other SDS sources  
+  
 <img width="1170" height="756" alt="image" src="https://github.com/user-attachments/assets/9c3210c7-a554-49e3-b386-f148462b8032" />
 
 ###
@@ -25,6 +26,7 @@ Additional sources for cross reference: NIST, PubChem, CameoChemicals
 
 ### App Flow
 <img width="652" height="666" alt="image" src="https://github.com/user-attachments/assets/fa17f399-6643-47a0-8cdc-b83b06e6b122" />
+  
 
 ```
 sds-ghs-extractor
