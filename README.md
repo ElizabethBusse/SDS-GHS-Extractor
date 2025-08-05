@@ -162,15 +162,21 @@ for a CAS through PubChem)
 
 ```
 Flash Point/Appearance/Odor:
+parser.py/extract_additional_safety_info
+
 - section 9 SDS
 ```
 
 ```
 Storage Condition:
+parser.py/extract_additional_safety_info
+
 - section 7 SDS
 ```
 
 ```
 Reactivity:
+parser.py/extract_additional_safety_info
+
 - section 10 SDS
 ```
