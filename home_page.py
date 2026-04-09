@@ -296,25 +296,28 @@ if st.session_state.submitted:
         st.rerun()
 
 
-else:
-        
-    col0, col1, col2 = st.columns([6,18,5])
 
+else:
+    # ✅ ALWAYS create columns first
+    col0, col1, col2 = st.columns([6, 18, 5])
+
+    # ✅ Home button (restored exactly as before)
     if col1.button("Home", type="secondary"):
         for key in ["submitted", "uploaded", "inputs", "all_results", "show_data_editor"]:
             st.session_state.pop(key, None)
         st.rerun()
 
+    # ✅ Expand all toggle (restored)
     show_all = col2.toggle("Expand all", value=True)
 
     results = st.session_state.get("all_results", [])
 
-    # ✅ THIS IS THE IMPORTANT PART
+    # ✅ Empty-results guard (NEW, safe)
     if not results:
         st.warning(
             "No SDS results were found.\n\n"
             "This usually means:\n"
-            "• The CAS does not exist on AaronChem or Millipore-Sigma\n"
+            "• The CAS does not exist on AaronChem or Millipore‑Sigma\n"
             "• OR the downloaded PDF was not a valid SDS"
         )
     else:
@@ -324,6 +327,7 @@ else:
                 for additional in result["additional_cas"]:
                     page_design(additional, show_all=show_all)
 
+        # ✅ Export button (only when results exist)
         output = export_result_to_excel(results)
         with col0:
             st.download_button(
@@ -333,3 +337,4 @@ else:
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 type="primary"
             )
+
