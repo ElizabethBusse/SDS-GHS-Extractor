@@ -2,22 +2,21 @@
 """
 streamlit_pdf_conv.py
 
-Connects Streamlit inputs to the working SDS parser.
-Only fixes CAS-based SDS ingestion.
+Connects Streamlit inputs to the SDS parser.
+NO parser logic is modified.
 """
 
-from parser import streamlit_pdf_upload
-from test_parser import run_parser
+from parser import streamlit_pdf_upload, parse_sds_file
 from sds_vendor_fetcher import find_sds_pdf_by_cas
 
 
 def sds_upload(pdf_file):
     """
     Handles direct user-uploaded SDS PDFs.
-    (This path already worked and is unchanged.)
+    This path already works and is unchanged.
     """
     text = streamlit_pdf_upload(pdf_file)
-    return run_parser(input_val=text, source="PDF Upload")
+    return parse_sds_file(input_val=text, source="PDF Upload")
 
 
 def cas_reader(cas_list):
@@ -25,7 +24,7 @@ def cas_reader(cas_list):
     CAS-based SDS lookup:
     - Search AaronChem / Millipore-Sigma
     - Download SDS PDF
-    - Run through the SAME pipeline as PDF upload
+    - Run through the SAME parser as PDF upload
     """
     results = []
 
@@ -42,7 +41,10 @@ def cas_reader(cas_list):
 
         try:
             text = streamlit_pdf_upload(pdf_bytes)
-            parsed = run_parser(input_val=text, source=f"CAS Lookup ({vendor})")
+            parsed = parse_sds_file(
+                input_val=text,
+                source=f"CAS Lookup ({vendor})"
+            )
             parsed["source"] = vendor
             results.append(parsed)
 
