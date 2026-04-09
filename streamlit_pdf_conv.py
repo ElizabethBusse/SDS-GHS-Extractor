@@ -1,58 +1,59 @@
 
-"""
-streamlit_pdf_conv.py
-
-Connects Streamlit inputs to the SDS parser.
-NO parser logic is modified.
-"""
-
-from parser import streamlit_pdf_upload, parse_sds_file
-from sds_vendor_fetcher import find_sds_pdf_by_cas
-
-
-def sds_upload(pdf_file):
-    """
-    Handles direct user-uploaded SDS PDFs.
-    This path already works and is unchanged.
-    """
-    text = streamlit_pdf_upload(pdf_file)
-    return parse_sds_file(input_val=text, source="PDF Upload")
-
-
 def cas_reader(cas_list):
     """
-    CAS-based SDS lookup:
-    - Search AaronChem / Millipore-Sigma
-    - Download SDS PDF
-    - Run through the SAME parser as PDF upload
+    CAS-based SDS lookup with explicit vendor transparency.
     """
     results = []
 
     for cas in cas_list:
-        pdf_bytes, vendor = find_sds_pdf_by_cas(cas)
+        vendor_result = find_sds_pdf_by_cas(cas)
 
-        if pdf_bytes is None:
+        if vendor_result is None:
             results.append({
                 "cas_number": cas,
-                "error": "SDS not found from AaronChem or Millipore-Sigma",
-                "source": None
+                "status": "NOT FOUND",
+                "vendor": None,
+                "sds_url": None,
+                "pdf_bytes": 0
             })
             continue
 
+        # ✅ Explicit visibility
+        vendor = vendor_result["vendor"]
+        url = vendor_result["url"]
+        pdf_bytes = vendor_result["pdf_bytes"]
+        byte_size = vendor_result["byte_size"]
+
+        # Surface raw fetch info FIRST
+        diagnostic = {
+            "cas_number": cas,
+            "status": "FOUND",
+            "vendor": vendor,
+            "sds_url": url,
+            "pdf_byte_size": byte_size
+        }
+
+        # Attempt parsing
         try:
             text = streamlit_pdf_upload(pdf_bytes)
+
+            if not text or len(text.strip()) < 50:
+                diagnostic["parse_status"] = "PDF DOWNLOADED BUT TEXT EXTRACTION FAILED"
+                results.append(diagnostic)
+                continue
+
             parsed = parse_sds_file(
                 input_val=text,
                 source=f"CAS Lookup ({vendor})"
             )
-            parsed["source"] = vendor
+
+            # Merge diagnostic + parsed data
+            parsed.update(diagnostic)
             results.append(parsed)
 
         except Exception as e:
-            results.append({
-                "cas_number": cas,
-                "error": str(e),
-                "source": vendor
-            })
+            diagnostic["parse_status"] = f"PARSER ERROR: {e}"
+            results.append(diagnostic)
 
     return results
+
