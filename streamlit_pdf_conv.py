@@ -95,5 +95,4 @@ if __name__ == "__main__":
     parsed = cas_reader(cas_list)
     for r in parsed:
         print(r.get("cas_number"), r.get("source"))
-``
 
