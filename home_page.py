@@ -59,9 +59,13 @@ if not st.session_state.submitted:
                 if data:
                     invalid_rows = []
                     for i, row in enumerate(data["CAS Number"]):
-                        row = str(row)
-                        if row and not is_valid_cas(row):
-                            invalid_rows.append(row)
+                        if row is None: 
+                            continue 
+                        row = str(row).strip()
+                        if row == "":
+                            continue
+                        if not is_valid_cas(row):
+                            invalid_rows.append((i,row))
 
                     if invalid_rows:
                         invalid = True
@@ -141,6 +145,7 @@ def page_design(results, show_all=False):
     expander.caption(f"Source: {results.get('source')}")
 
 
+
 if st.session_state.submitted:
     if "all_results" not in st.session_state:
         results_combined = []
@@ -153,12 +158,14 @@ if st.session_state.submitted:
 
         if st.session_state.get("inputs"):
             cas_numbers = []
-            for row in st.session_state.inputs['edited_rows'].values():
-                cas = row.get('CAS Number')
+
+            for row in st.session_state.inputs.get("edited_rows", {}).values():
+                cas = row.get("CAS Number")
                 if cas:
                     cas_numbers.append(cas)
 
-            results_combined.append(cas_reader(cas_numbers))
+            if cas_numbers:
+                results_combined.append(cas_reader(cas_numbers))
 
         st.session_state["all_results"] = results_combined
         st.rerun()
@@ -174,6 +181,9 @@ if st.session_state.submitted:
         show_all = col2.toggle("Expand all", value=True)
 
         for result in st.session_state["all_results"]:
+            if not isinstance(result, dict):
+                continue
+
             page_design(result, show_all=show_all)
 
         if st.session_state["all_results"]:
@@ -185,4 +195,5 @@ if st.session_state.submitted:
                     "sds_summary.xlsx",
                     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                 )
+
 
