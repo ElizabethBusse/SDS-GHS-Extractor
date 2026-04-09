@@ -8,73 +8,75 @@ def sds_upload(pdf_file):
 
 
 def cas_reader(cas_list):
-    results = []
-
     try:
         from sds_vendor_fetcher import find_sds_pdf_by_cas
     except Exception as e:
-        return [{
+        return {
             "error": "Failed to import sds_vendor_fetcher",
-            "details": str(e),
-            "cas_list": cas_list
-        }]
+            "details": str(e)
+        }
 
-    for cas in cas_list:
-        try:
-            vendor_result = find_sds_pdf_by_cas(cas)
-        except Exception as e:
-            results.append({
-                "cas_number": cas,
-                "status": "VENDOR LOOKUP ERROR",
-                "error": str(e)
-            })
-            continue
+    if not cas_list:
+        return {
+            "error": "No CAS number provided"
+        }
 
-        if vendor_result is None:
-            results.append({
-                "cas_number": cas,
-                "status": "NOT FOUND",
-                "vendor": None,
-                "sds_url": None,
-                "pdf_byte_size": 0
-            })
-            continue
+    cas = cas_list[0]
 
-        try:
-            vendor = vendor_result.get("vendor")
-            url = vendor_result.get("url")
-            pdf_bytes = vendor_result.get("pdf_bytes")
-            byte_size = vendor_result.get("byte_size")
+    try:
+        vendor_result = find_sds_pdf_by_cas(cas)
+    except Exception as e:
+        return {
+            "cas_number": cas,
+            "status": "VENDOR LOOKUP ERROR",
+            "error": str(e)
+        }
 
-            diagnostic = {
+    if vendor_result is None:
+        return {
+            "cas_number": cas,
+            "status": "NOT FOUND",
+            "vendor": None,
+            "sds_url": None,
+            "pdf_byte_size": 0
+        }
+
+    try:
+        vendor = vendor_result.get("vendor")
+        url = vendor_result.get("url")
+        pdf_bytes = vendor_result.get("pdf_bytes")
+        byte_size = vendor_result.get("byte_size")
+
+        text = streamlit_pdf_upload(pdf_bytes)
+
+        if not text or len(text.strip()) < 50:
+            return {
                 "cas_number": cas,
                 "status": "FOUND",
                 "vendor": vendor,
                 "sds_url": url,
-                "pdf_byte_size": byte_size
+                "pdf_byte_size": byte_size,
+                "parse_status": "PDF DOWNLOADED BUT TEXT EXTRACTION FAILED"
             }
 
-            text = streamlit_pdf_upload(pdf_bytes)
+        parsed = parse_sds_file(
+            input_val=text,
+            source=f"CAS Lookup ({vendor})"
+        )
 
-            if not text or len(text.strip()) < 50:
-                diagnostic["parse_status"] = "PDF DOWNLOADED BUT TEXT EXTRACTION FAILED"
-                results.append(diagnostic)
-                continue
+        parsed.update({
+            "cas_number": cas,
+            "status": "FOUND",
+            "vendor": vendor,
+            "sds_url": url,
+            "pdf_byte_size": byte_size
+        })
 
-            parsed = parse_sds_file(
-                input_val=text,
-                source=f"CAS Lookup ({vendor})"
-            )
+        return parsed
 
-            parsed.update(diagnostic)
-            results.append(parsed)
-
-        except Exception as e:
-            results.append({
-                "cas_number": cas,
-                "status": "PARSER ERROR",
-                "error": str(e)
-            })
-
-    return results
-
+    except Exception as e:
+        return {
+            "cas_number": cas,
+            "status": "PARSER ERROR",
+            "error": str(e)
+        }
