@@ -1,37 +1,58 @@
+
 # two options: SDS upload or CAS search
 # collect all data that will be displayed onto streamlit UI
 
+from sds_vendor_fetcher import find_sds_pdf_by_cas
 from parser import streamlit_pdf_upload
 from test_parser import run_parser
-# import tempfile
-from selenium.webdriver.firefox.options import Options
-from test_cas_upload import search_by_cas
+
 
 def sds_upload(pdf_file):
+    """
+    Handles direct PDF uploads (THIS PATH IS UNCHANGED).
+    """
     text = streamlit_pdf_upload(pdf_file)
     results = run_parser(input_val=text)
     return results
 
+
 def cas_reader(cas_list):
-    # temp_dir = tempfile.TemporaryDirectory()
-    # selected_dir = temp_dir.name
+    """
+    Handles CAS input:
+    - Searches AaronChem first
+    - Then Millipore-Sigma / Sigma-Aldrich
+    - Downloads ONE SDS PDF
+    - Feeds it into the SAME PDF pipeline as uploads
+    """
 
-    # options = Options()
-    # options.add_argument("--headless")
-    # options.add_argument("--disable-gpu")
-    # options.add_argument("--no-sandbox")
+    results = []
 
-    # options.set_preference("browser.download.folderList", 2)
-    # options.set_preference("browser.download.dir", selected_dir or "/tmp")
-    # options.set_preference("browser.helperApps.neverAsk.saveToDisk", "application/pdf")
-    # options.set_preference("pdfjs.disabled", True)
-    # options.set_preference("browser.download.manager.showWhenStarting", False)
+    for cas in cas_list:
+        pdf_bytes, source = find_sds_pdf_by_cas(cas)
 
-    results = search_by_cas(cas_list)
+        if pdf_bytes:
+            # ✅ Reuse the EXACT same working PDF logic
+            result = sds_upload(pdf_bytes)
+            result["source"] = source
+            results.append(result)
+        else:
+            # ❌ Explicit, user-visible error
+            results.append({
+                "cas_number": cas,
+                "source": "CAS Search",
+                "notes": [
+                    "SDS does not exist in AaronChem or Millipore-Sigma"
+                ],
+                "ghs_from_sds": [],
+                "ghs_categories": None,
+                "nfpa": None,
+            })
+
     return results
 
+
 if __name__ == "__main__":
+    # Simple manual test
     cas_list = ['64-19-7', '1015484-22-6', '000-00-0']
-    # temp_dir = tempfile.TemporaryDirectory()
-    # selected_dir = temp_dir.name
-    search_by_cas(cas_list)
+    results = cas_reader(cas_list)
+    print(results)
