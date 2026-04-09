@@ -343,7 +343,7 @@ def extract_ghs_statements(text, threshold=60):
 
 # SECTION 6. cv GHS by CAS with PubChem
 def get_cid_from_cas(cas_number):
-    url = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/{cas_number}/cids/JSON"
+    url = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/xref/RN/{cas_number}/cids/JSON"
     response = requests.get(url)
     
     if response.status_code == 200:
