@@ -4,6 +4,8 @@ import io
 import re
 import requests
 from rapidfuzz import fuzz
+from pdf2image import convert_from_path
+import pytesseract
 import traceback
 
 from haz_comp_full import *
@@ -70,53 +72,61 @@ def extract_between_sections(text, start_section, end_section):
 
 
 # SECTION 1. extract text from PDF with OCR fallback
-
 def extract_text_from_pdf(pdf_path):
-    """
-    Extract text from a PDF using PyMuPDF (fitz).
-    OCR is intentionally NOT used because it is not supported
-    on Streamlit Community Cloud.
-    """
-    text = ""
-
     try:
+        text = ""
         with fitz.open(pdf_path) as doc:
             for page in doc:
                 text += page.get_text()
+            if len(text.strip()) > 100: # if <100, likely file is not readable, program continues to OCR
+                return text
     except Exception as e:
-        raise RuntimeError(f"Failed to read PDF text: {e}")
+        print(f"Text extraction failed: {e}")
 
+    # OCR fallback
+    print("Using OCR fallback...")
+    images = convert_from_path(pdf_path) # converts to image to use in pytesseract OCR
+    for img in images:
+        text += pytesseract.image_to_string(img)
     return text
 
-
-
 def streamlit_pdf_upload(pdf_input):
-    """
-    Extract text from a Streamlit-uploaded PDF using PyMuPDF (fitz).
-    OCR is intentionally NOT used because it is not supported
-    on Streamlit Community Cloud.
-    """
-    text = ""
-
     try:
-        if hasattr(pdf_input, "read"):  # Streamlit UploadedFile
+        text = ''
+        if hasattr(pdf_input, "read"):  # Streamlit uploaded_file is a file-like object
             pdf_bytes = pdf_input.read()
             doc = fitz.open(stream=pdf_bytes, filetype="pdf")
         elif isinstance(pdf_input, bytes):
             doc = fitz.open(stream=pdf_input, filetype="pdf")
         else:
-            doc = fitz.open(pdf_input)
+            doc = fitz.open(pdf_input)  # fallback for file path
 
         with doc:
             for page in doc:
                 text += page.get_text()
-
+            if len(text.strip()) > 100:
+                return text
     except Exception as e:
-        raise RuntimeError(f"Failed to read uploaded PDF text: {e}")
+        print(f"Text extraction failed: {e}")
 
+
+    # OCR fallback
+    print("Using OCR fallback...")
+    try:
+        if hasattr(pdf_input, "read"):
+            # Reopen bytes since previous read() may have consumed the stream
+            pdf_input.seek(0)
+            images = convert_from_path(pdf_input.name)  # convert_from_path expects a filename
+        elif isinstance(pdf_input, bytes):
+            raise ValueError("OCR fallback not supported for byte stream without file path.")
+        else:
+            images = convert_from_path(pdf_input)
+
+        for img in images:
+            text += pytesseract.image_to_string(img)
+    except Exception as e:
+        print(f"OCR fallback failed: {e}")
     return text
-
-   
 
 
 # SECTION 2. extract CAS number from document (regex + heuristics) 
