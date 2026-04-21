@@ -1,82 +1,37 @@
+# two options: SDS upload or CAS search
+# collect all data that will be displayed onto streamlit UI
 
-from parser import streamlit_pdf_upload, parse_sds_file
-
+from parser import streamlit_pdf_upload
+from test_parser import run_parser
+# import tempfile
+from selenium.webdriver.firefox.options import Options
+from test_cas_upload import search_by_cas
 
 def sds_upload(pdf_file):
     text = streamlit_pdf_upload(pdf_file)
-    return parse_sds_file(input_val=text, source="PDF Upload")
-
+    results = run_parser(input_val=text)
+    return results
 
 def cas_reader(cas_list):
-    try:
-        from sds_vendor_fetcher import find_sds_pdf_by_cas
-    except Exception as e:
-        return {
-            "error": "Failed to import sds_vendor_fetcher",
-            "details": str(e)
-        }
+    # temp_dir = tempfile.TemporaryDirectory()
+    # selected_dir = temp_dir.name
 
-    if not cas_list:
-        return {
-            "error": "No CAS number provided"
-        }
+    # options = Options()
+    # options.add_argument("--headless")
+    # options.add_argument("--disable-gpu")
+    # options.add_argument("--no-sandbox")
 
-    cas = cas_list[0]
+    # options.set_preference("browser.download.folderList", 2)
+    # options.set_preference("browser.download.dir", selected_dir or "/tmp")
+    # options.set_preference("browser.helperApps.neverAsk.saveToDisk", "application/pdf")
+    # options.set_preference("pdfjs.disabled", True)
+    # options.set_preference("browser.download.manager.showWhenStarting", False)
 
-    try:
-        vendor_result = find_sds_pdf_by_cas(cas)
-    except Exception as e:
-        return {
-            "cas_number": cas,
-            "status": "VENDOR LOOKUP ERROR",
-            "error": str(e)
-        }
+    results = search_by_cas(cas_list)
+    return results
 
-    if vendor_result is None:
-        return {
-            "cas_number": cas,
-            "status": "NOT FOUND",
-            "vendor": None,
-            "sds_url": None,
-            "pdf_byte_size": 0
-        }
-
-    try:
-        vendor = vendor_result.get("vendor")
-        url = vendor_result.get("url")
-        pdf_bytes = vendor_result.get("pdf_bytes")
-        byte_size = vendor_result.get("byte_size")
-
-        text = streamlit_pdf_upload(pdf_bytes)
-
-        if not text or len(text.strip()) < 50:
-            return {
-                "cas_number": cas,
-                "status": "FOUND",
-                "vendor": vendor,
-                "sds_url": url,
-                "pdf_byte_size": byte_size,
-                "parse_status": "PDF DOWNLOADED BUT TEXT EXTRACTION FAILED"
-            }
-
-        parsed = parse_sds_file(
-            input_val=text,
-            source=f"CAS Lookup ({vendor})"
-        )
-
-        parsed.update({
-            "cas_number": cas,
-            "status": "FOUND",
-            "vendor": vendor,
-            "sds_url": url,
-            "pdf_byte_size": byte_size
-        })
-
-        return parsed
-
-    except Exception as e:
-        return {
-            "cas_number": cas,
-            "status": "PARSER ERROR",
-            "error": str(e)
-        }
+if __name__ == "__main__":
+    cas_list = ['64-19-7', '1015484-22-6', '000-00-0']
+    # temp_dir = tempfile.TemporaryDirectory()
+    # selected_dir = temp_dir.name
+    search_by_cas(cas_list)
