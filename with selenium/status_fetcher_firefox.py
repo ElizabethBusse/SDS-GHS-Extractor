@@ -102,7 +102,7 @@ def fetch_sds_sigma_aldrich(cas_number, download_dir=None):
 
             # Click actual SDS PDF link
             link = WebDriverWait(driver, 10).until(
-                EC.element_to_be_clickable((By.XPATH, "//a[@id='sds-link-EN']"))
+                EC.element_to_be_clickable((By.XPATH, ""//a[contains(@href, '/sds/') and contains(@href, 'pdf')]"))
             )
             link.click()
 
